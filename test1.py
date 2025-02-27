@@ -14,17 +14,20 @@ else:
     # 計算 x 日均線
     x=10
     df['x_day_avg'] = df['Close'].rolling(window=x).mean()
+    # 計算 x 日均線
+    y=20
+    df['twenty_day_avg'] = df['Close'].rolling(window=y).mean()
 
     # 交易變數初始化
     cash = 50000  # 初始現金
     stock_owned = 0  # 持有股數
     total_investment = cash  # 初始投資總額
-    buy_price_threshold = 0.02  # 買入閾值
+    buy_price_threshold = 0.01  # 買入閾值
     buy_price_threshold1 = 0.06  # 買入閾值
     buy_price_threshold2 = 0.09  # 買入閾值
     sell_price_threshold = 0.02  # 賣出閾值
-    sell_price_threshold1 = 0.07  # 賣出閾值
-    sell_price_threshold2 = 0.12  # 賣出閾值
+    sell_price_threshold1 = 0.03  # 賣出閾值
+    sell_price_threshold2 = 0.04  # 賣出閾值
     buy_signals = []
     sell_signals = []
     copy_buy_signals = []
@@ -37,42 +40,46 @@ else:
 
         if ten_day_avg * (1 - buy_price_threshold1) < today_close < ten_day_avg * (1 - buy_price_threshold) and cash > today_close and today_close < yesterday_close:
             stock_owned += 1
-            cash -= today_close
+            cash -= today_close * (100.0855/100)
             buy_signals.append((df.index[i], today_close))  # 記錄日期與價格
             copy_buy_signals.append((df.index[i], today_close))
+            
         if ten_day_avg * (1 - buy_price_threshold2) < today_close <= ten_day_avg * (1 - buy_price_threshold1) and cash > 2 * today_close and today_close < yesterday_close:
             stock_owned += 2
-            cash -= 2*today_close
+            cash -= 2*today_close * (100.0855/100)
             buy_signals.append((df.index[i], today_close))  # 記錄日期與價格
             copy_buy_signals.append((df.index[i], today_close))
+            
         if today_close < ten_day_avg * (1 - buy_price_threshold2) and cash > 3 * today_close and today_close < yesterday_close:
             stock_owned += 3
-            cash -= 3 * today_close
+            cash -= 3 * today_close * (100.0855/100)
             buy_signals.append((df.index[i], today_close))  # 記錄日期與價格
             copy_buy_signals.append((df.index[i], today_close))
+            
         for n in range(len(copy_buy_signals)):
             if ten_day_avg * (1 + sell_price_threshold1) > today_close >= ten_day_avg * (1 + sell_price_threshold) and today_close > copy_buy_signals[n][1] and stock_owned >=1 and today_close < yesterday_close :
                 stock_owned -= 1
-                cash += 1 * today_close
+                cash += 1 * today_close * (99.6145/100)
                 copy_buy_signals.pop(n)#刪除第n個
                 sell_signals.append((df.index[i], today_close))  # 更新成第i日期與價格
+                print(f"賣一張{df.index[i], today_close}")
                 break
             if ten_day_avg * (1 + sell_price_threshold2) > today_close >= ten_day_avg * (1 + sell_price_threshold1) and today_close > copy_buy_signals[n][1] and stock_owned >=2 and today_close < yesterday_close :
                 stock_owned -= 2
-                cash += 2 * today_close
+                cash += 2 * today_close * (99.6145/100)
                 copy_buy_signals.pop(n)#刪除第n個
                 sell_signals.append((df.index[i], today_close))  # 更新成第i日期與價格
+                print(f"賣兩張{df.index[i], today_close}")
                 break
             if today_close >= ten_day_avg * (1 + sell_price_threshold2) and today_close > copy_buy_signals[n][1] and stock_owned >= 3 and today_close < yesterday_close :
                 stock_owned -= 3
-                cash += 3 * today_close
+                cash += 3 * today_close * (99.6145/100)
                 copy_buy_signals.pop(n)#刪除第n個
                 sell_signals.append((df.index[i], today_close))  # 更新成第i日期與價格
+                print(f"賣三張{df.index[i], today_close}")
                 break                       
 
-    print(f"賣出data{sell_signals}")
-    print(f"剩餘沒賣出data{copy_buy_signals}")
-
+    print(stock_owned)
     # 計算最終投資價值
     final_value = cash + stock_owned * df.iloc[-1]['Close']
     investment_return = (final_value - total_investment) / total_investment * 100
@@ -96,9 +103,11 @@ else:
     ap_sell = mpf.make_addplot(df['Sell_Signal'], type='scatter', markersize=100, marker='v', color='r') if not df['Sell_Signal'].isna().all() else None    
     # Create an addplot for the x-day moving average
     ap_ma = mpf.make_addplot(df['x_day_avg'], color='r')
+    # Create an addplot for the twenty-day moving average
+    ap_ma1 = mpf.make_addplot(df['twenty_day_avg'], color='purple')
     
     # 組合 addplot
-    addplots = [ap for ap in [ap_buy, ap_sell, ap_ma] if ap is not None]
+    addplots = [ap for ap in [ap_buy, ap_sell, ap_ma, ap_ma1] if ap is not None]
 
     # 繪製 K 線圖
     mpf.plot(df, type='line', style='charles', title='2330', volume=True, addplot=addplots)
